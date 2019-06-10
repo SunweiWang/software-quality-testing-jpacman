@@ -1,18 +1,19 @@
 package nl.tudelft.jpacman.level;
 
+import nl.tudelft.jpacman.points.DefaultPointCalculator;
 import nl.tudelft.jpacman.points.PointCalculator;
-
-import static org.mockito.Mockito.mock;
 
 
 /**
- * javdoc.
+ * java doc.
  */
 public class PlayerCollisionTest extends CollisionMapAbstractTests {
+    private PointCalculator pointCalculator = new DefaultPointCalculator();
+
     /**
-     * javaodc.
+     * java doc.
      */
     public PlayerCollisionTest() {
-        setCmap(new PlayerCollisions(mock(PointCalculator.class)));
+        setCmap(new PlayerCollisions(pointCalculator));
     }
 }
