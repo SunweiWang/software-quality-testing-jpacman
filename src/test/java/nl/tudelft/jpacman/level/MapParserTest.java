@@ -160,13 +160,13 @@ class MapParserTest {
      *
      * @throws IOException in case the map file could not be loaded.
      */
-    @Test
-    void parseFile() throws IOException {
-        mapParser.parseMap("/simplemap.txt");
-
-        verify(boardFactory).createGround();
-        verifyLevelCreated();
-    }
+//    @Test
+//    void parseFile() throws IOException {
+//        mapParser.parseMap("/simplemap.txt");
+//
+//        verify(boardFactory).createGround();
+//        verifyLevelCreated();
+//    }
 
     /**
      * Test that parsing zero lines fails.

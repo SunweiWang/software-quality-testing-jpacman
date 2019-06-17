@@ -31,6 +31,9 @@ class GameUnitTest {
     private Level level;
     private PointCalculator pointCalculator;
 
+    /**
+     * Setup.
+     */
     @BeforeEach
     void setUp() {
         player = mock(Player.class);
