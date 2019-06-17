@@ -43,6 +43,17 @@ public abstract class Game implements LevelObserver {
     }
 
     /**
+     * Creates a new game.
+     *
+     * @param player
+     *             The player.
+     */
+    protected Game(Player player) {
+        this.pointCalculator = pointCalculator;
+        inProgress = false;
+    }
+
+    /**
      * Starts or resumes the game.
      */
     public void start() {

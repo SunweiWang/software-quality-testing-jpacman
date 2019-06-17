@@ -145,6 +145,17 @@ When  the player hits the "Start" button;
 Then  the game is resumed.
 ```
 
+```
+As a Player, I want the game to have multiple levels, so that when I win one I can play
+another quickly. Two fitting scenarios would the be:
+5.1 Given that the game has started;
+When the player has collected all pellets;
+Then the next Level is loaded and the game proceeds.
+5.2 Given that the game has started;
+When all pellets in the last level have been eaten;
+Then the player wins the game.
+```
+
 ## 3. User Interface
 
 The user interface for JPacman is relatively simple.  The game is
