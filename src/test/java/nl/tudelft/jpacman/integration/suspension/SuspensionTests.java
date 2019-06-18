@@ -1,4 +1,4 @@
-package nl.tudelft.jpacman.integration;
+package nl.tudelft.jpacman.integration.suspension;
 
 import nl.tudelft.jpacman.Launcher;
 import nl.tudelft.jpacman.game.Game;
@@ -10,7 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * suspension.
+ * Consider the scenario: Given that the game has started, the ghosts and player should be
+ * suspended when the player has clicked the stop button. A test suite should setup according to
+ * these conditions and check each step with an assert or mock’s verify.
  */
 public class SuspensionTests {
     private Game game;
@@ -36,7 +38,7 @@ public class SuspensionTests {
     }
 
     /**
-     * 4.1.
+     * Scenario 4.1. Suspend the game.
      */
     @Test
     public void scenario41Suspend() {
@@ -46,7 +48,7 @@ public class SuspensionTests {
     }
 
     /**
-     * 4.2.
+     * Scenario 4.2. Restart the game.
      */
     @Test
     public void scenario42Suspend() {
