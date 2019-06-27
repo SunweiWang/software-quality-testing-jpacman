@@ -153,20 +153,20 @@ class MapParserTest {
      *
      * [Good Weather]
      *
-     * Contents of simplemap.txt:
+     * Contents of basicmap.txt:
      * <code>
      *     P
      * </code>
      *
      * @throws IOException in case the map file could not be loaded.
      */
-//    @Test
-//    void parseFile() throws IOException {
-//        mapParser.parseMap("/simplemap.txt");
-//
-//        verify(boardFactory).createGround();
-//        verifyLevelCreated();
-//    }
+    @Test
+    void parseFile() throws IOException {
+        mapParser.parseMap("/basicmap.txt");
+
+        verify(boardFactory).createGround();
+        verifyLevelCreated();
+    }
 
     /**
      * Test that parsing zero lines fails.
