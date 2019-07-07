@@ -1,91 +1,68 @@
 package nl.tudelft.jpacman;
-import nl.tudelft.jpacman.game.MultiLevelSinglePlayerGame;
+
+import nl.tudelft.jpacman.game.MultiLevelGame;
 import nl.tudelft.jpacman.level.Level;
-import nl.tudelft.jpacman.level.Player;
-import nl.tudelft.jpacman.points.DefaultPointCalculator;
+import nl.tudelft.jpacman.level.PlayerFactory;
+import nl.tudelft.jpacman.points.PointCalculator;
+import nl.tudelft.jpacman.points.PointCalculatorLoader;
+import nl.tudelft.jpacman.ui.PacManUI;
 import nl.tudelft.jpacman.ui.PacManUiBuilder;
-import nl.tudelft.jpacman.ui.ScorePanel;
-import nl.tudelft.jpacman.ui.ScorePanel.ScoreFormatter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * A launcher that creates a game with a single
- * player and 3 levels.
- *
+ * The multi level game launcher.
  */
 public class MultiLevelLauncher extends Launcher {
-    private MultiLevelSinglePlayerGame multiGame;
+
+    private MultiLevelGame multiGame;
+
+    private PacManUI pacManUI;
+
+    private static final int MAX_GAMES = 4;
 
     @Override
-    public MultiLevelSinglePlayerGame getGame() {
+    public MultiLevelGame getGame() {
         return multiGame;
     }
 
     @Override
-    public MultiLevelSinglePlayerGame makeGame() {
-        Player player = getPlayerFactory().createPacMan();
-        multiGame = new MultiLevelSinglePlayerGame(player, new DefaultPointCalculator());
-        addLevels();
-        multiGame.getLevel().registerPlayer(player);
+    public MultiLevelGame makeGame() {
+        List<Level> list = new ArrayList<>();
+        for (int i = 0; i < MAX_GAMES; i++) {
+            list.add(makeLevel());
+        }
+        PlayerFactory pf = getPlayerFactory();
+        multiGame = new MultiLevelGame(pf.createPacMan(), list, loadPointCalculator());
         return multiGame;
     }
 
-    /**
-     * Set the name of the file containing this level's map.
-     *
-     * @param fileName
-     *            Map to be used.
-     * @return Level corresponding to the given map.
-     */
-    @Override
-    public MultiLevelLauncher withMapFile(String fileName) {
-        setLevelMap(fileName);
-        return this;
-    }
-
-
-    /**
-     * Add a series of levels to this multi-level game.
-     */
-    public void addLevels() {
-// Just add the same level three times.
-        addLevel(makeLevel());
-        addLevel(makeLevel());
-        addLevel(makeLevel());
-    }
-    /**
-     * Add one particular level to this game.
-     * @param l The level to bye added.
-     */
-    public void addLevel(Level l) {
-        multiGame.addLevel(l);
-    }
     /**
      * Creates and starts a JPac-Man game.
      */
     @Override
     public void launch() {
-        multiGame = makeGame();
-// This could be a lambda, but those cause cobertura to crash ...
-        ScoreFormatter sf = new ScoreFormatter() {
-            public String format(Player p) {
-                String score = ScorePanel.DEFAULT_SCORE_FORMATTER.format(p);
-                score += String.format("; Steps: %3d", multiGame.getMoveCount());
-                return score;
-            }
-        };
-        PacManUiBuilder builder = new PacManUiBuilder()
-            .withDefaultButtons()
-            .withScoreFormatter(sf);
-//        addSinglePlayerKeys(builder, multiGame);
+        makeGame();
+        PacManUiBuilder builder = new PacManUiBuilder().withDefaultButtons();
         addSinglePlayerKeys(builder);
-        builder.build(multiGame).start();
+        pacManUI = builder.build(getGame());
+        pacManUI.start();
+    }
+
+    private PointCalculator loadPointCalculator() {
+        return new PointCalculatorLoader().load();
     }
 
     /**
-     * Create a new multi-level game and launch it.
-     * @param arg All arguments are ignored.
+     * Main execution method for the Launcher.
+     * Executes method launch.
+     *
+     * @param args The command line arguments - which are ignored.
+     * @throws IOException When a resource could not be read.
      */
-    public static void main(String[] arg) {
-        MultiLevelLauncher l = new MultiLevelLauncher();
-        l.launch();
+    public static void main(String[] args) throws IOException {
+        new MultiLevelLauncher().launch();
     }
 }

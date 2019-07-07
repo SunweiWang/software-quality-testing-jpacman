@@ -31,23 +31,20 @@ public final class GhostMapParser extends MapParser {
         this.ghostFactory = ghostFactory;
     }
 
-    //This method only supports clyde at default
-    //You should add Blinky, Pinky and Inky ghosts by yourself.
+    //This method only supports clyde for now
+    //You should add extra cases for ghosts you need.
     @Override
     protected void addSquare(Square[][] grid, List<Ghost> ghosts,
                              List<Square> startPositions, int x, int y, char c) {
         switch (c) {
-            case 'B':
-                grid[x][y] = makeGhostSquare(ghosts, ghostFactory.createBlinky());
-                break;
-            case 'Y':
-                grid[x][y] = makeGhostSquare(ghosts, ghostFactory.createPinky());
+            case 'C':
+                grid[x][y] = makeGhostSquare(ghosts, ghostFactory.createClyde());
                 break;
             case 'I':
                 grid[x][y] = makeGhostSquare(ghosts, ghostFactory.createInky());
                 break;
-            case 'C':
-                grid[x][y] = makeGhostSquare(ghosts, ghostFactory.createClyde());
+            case 'B':
+                grid[x][y] = makeGhostSquare(ghosts, ghostFactory.createBlinky());
                 break;
             default:
                 super.addSquare(grid, ghosts, startPositions, x, y, c);

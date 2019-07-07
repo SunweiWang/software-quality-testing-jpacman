@@ -6,227 +6,236 @@ import nl.tudelft.jpacman.board.Square;
 import nl.tudelft.jpacman.npc.Ghost;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.times;
+
 
 /**
- * Series of test cases for the map parser.
+ * Test suite for the level.MapParser class.
+ * We test the different behaviours related to calling different factories.
  */
 class MapParserTest {
-    /**
-     * The object under test.
-     */
-    private MapParser mapParser;
 
-    /**
-     * The dependencies of the object under test.
-     * They will be verified to see if the correct factory
-     * methods are invoked upon parsing the relevant lines.
-     */
-    private LevelFactory levelFactory;
     private BoardFactory boardFactory;
 
+    private LevelFactory levelFactory;
+
+    private MapParser mapParser;
+
+    private Square square;
+
+    private Pellet pellet;
+
+    private Ghost ghost;
+
+    private List<String> levelMap;
+
+    private static final int SIZE = 9;
+
     /**
-     * Instantiate the parser with its (mock) factories.
-     *
-     * [Good Weather]
+     * Sets up the mocked classes and the methods that need to be verified if called.
      */
     @BeforeEach
     void setUp() {
-        levelFactory = mock(LevelFactory.class);
-        boardFactory = mock(BoardFactory.class);
-
+        levelFactory = Mockito.mock(LevelFactory.class);
+        boardFactory = Mockito.mock(BoardFactory.class);
+        pellet = Mockito.mock(Pellet.class);
+        square = Mockito.mock(Square.class);
+        ghost = Mockito.mock(Ghost.class);
+        Mockito.when(boardFactory.createGround()).thenReturn(square);
+        Mockito.doNothing().when(pellet).occupy(square);
+        Mockito.when(levelFactory.createPellet()).thenReturn(pellet);
+        Mockito.doNothing().when(ghost).occupy(square);
+        Mockito.when(levelFactory.createGhost()).thenReturn(ghost);
         mapParser = new MapParser(levelFactory, boardFactory);
+        levelMap = new ArrayList<>();
     }
 
     /**
-     * Test that an empty square is actually created.
-     *
-     * [Good Weather]
+     * Tests a level map with only empty spaces.
      */
     @Test
-    void parseEmptySquare() {
-        mapParser.parseMap(singletonList(" "));
-
-        verify(boardFactory).createGround();
-        verifyLevelCreated();
+    void emptySpacesTest() {
+        levelMap.add("   ");
+        levelMap.add("   ");
+        levelMap.add("   ");
+        mapParser.parseMap(levelMap);
+        Mockito.verify(boardFactory, times(SIZE)).createGround();
     }
 
     /**
-     * Test that a wall is actually created.
-     *
-     * [Good Weather]
+     * Tests a level map only with walls.
      */
     @Test
-    void parseWall() {
-        mapParser.parseMap(singletonList("#"));
-
-        verify(boardFactory).createWall();
-        verifyLevelCreated();
+    void wallsOnlyTest() {
+        levelMap.add("###");
+        levelMap.add("###");
+        levelMap.add("###");
+        mapParser.parseMap(levelMap);
+        Mockito.verify(boardFactory, times(SIZE)).createWall();
     }
 
     /**
-     * Test that a pellet is actually created.
-     *
-     * [Good Weather]
+     * Tests a level map only with pellets.
      */
     @Test
-    void parsePellet() {
-        Square square = mock(Square.class);
-        when(boardFactory.createGround()).thenReturn(square);
-
-        Pellet pellet = mock(Pellet.class);
-        when(levelFactory.createPellet()).thenReturn(pellet);
-
-        mapParser.parseMap(singletonList("."));
-
-        verify(boardFactory).createGround();
-        verify(levelFactory).createPellet();
-        verify(pellet).occupy(square);
-        verifyLevelCreated();
+    void pelletsOnlyTest() {
+        levelMap.add("...");
+        levelMap.add("...");
+        levelMap.add("...");
+        mapParser.parseMap(levelMap);
+        Mockito.verify(boardFactory, times(SIZE)).createGround();
+        Mockito.verify(levelFactory, times(SIZE)).createPellet();
     }
 
     /**
-     * Test that a player is actually created.
-     *
-     * [Good Weather]
+     * Tests a level map with only a ghost.
      */
     @Test
-    void parsePlayer() {
-        Square playerSquare = mock(Square.class);
-        when(boardFactory.createGround()).thenReturn(playerSquare);
-
-        mapParser.parseMap(singletonList("P"));
-
-        verify(boardFactory).createGround();
-        verify(levelFactory).createLevel(any(), anyList(), eq(singletonList(playerSquare)));
+    void ghostsOnlyTest() {
+        levelMap.add("G");
+        mapParser.parseMap(levelMap);
+        Mockito.verify(boardFactory, times(1)).createGround();
     }
 
     /**
-     * Test that a ghost is actually created.
-     *
-     * [Good Weather]
+     * Tests a level map with only a player.
      */
     @Test
-    void parseGhost() {
-        Square square = mock(Square.class);
-        when(boardFactory.createGround()).thenReturn(square);
-
-        Ghost ghost = mock(Ghost.class);
-        when(levelFactory.createGhost()).thenReturn(ghost);
-
-        mapParser.parseMap(singletonList("G"));
-
-        verify(boardFactory).createGround();
-        verify(levelFactory).createGhost();
-        verify(ghost).occupy(square);
-        verifyLevelCreated();
+    void playerOnlyTest() {
+        levelMap.add("P");
+        Mockito.when(boardFactory.createGround()).thenReturn(square);
+        mapParser.parseMap(levelMap);
+        Mockito.verify(boardFactory, times(1)).createGround();
     }
 
     /**
-     * Test that a map provided as a char array can be parsed.
-     *
-     * [Good Weather]
+     * Combined normal behaviour test of all of the factories needed to be mocked.
+     * Contains all possible good weather cases.
      */
     @Test
-    void parseArray() {
-        mapParser.parseMap(new char[][] {{' '}, {'#'}});
-
-        verify(boardFactory).createGround();
-        verify(boardFactory).createWall();
-        verifyLevelCreated();
+    @SuppressWarnings("checkstyle:magicnumber"
+        // the test contains non generic numbers specific to this test
+    )
+    void combinedNormalBehaviourTest() {
+        levelMap.add("G..");
+        levelMap.add(" P ");
+        levelMap.add("###");
+        mapParser.parseMap(levelMap);
+        Mockito.verify(boardFactory, times(6)).createGround();
+        Mockito.verify(levelFactory, times(2)).createPellet();
+        Mockito.verify(boardFactory, times(3)).createWall();
+        Mockito.verify(levelFactory, times(1)).createGhost();
     }
 
     /**
-     * Test that a map provided as a file can be parsed.
+     * Test for parsing a text file with normal behaviour.
      *
-     * [Good Weather]
-     *
-     * Contents of basicmap.txt:
-     * <code>
-     *     P
-     * </code>
-     *
-     * @throws IOException in case the map file could not be loaded.
+     * @throws IOException the io exception
      */
     @Test
-    void parseFile() throws IOException {
-        mapParser.parseMap("/basicmap.txt");
-
-        verify(boardFactory).createGround();
-        verifyLevelCreated();
+    @SuppressWarnings("checkstyle:magicnumber"
+        // the test contains non generic numbers specific to this test
+    )
+    void textFileParseMapTest() throws IOException {
+        mapParser.parseMap("/testmap.txt");
+        Mockito.verify(boardFactory, times(4)).createGround();
+        Mockito.verify(levelFactory, times(1)).createPellet();
+        Mockito.verify(boardFactory, times(12)).createWall();
+        Mockito.verify(levelFactory, times(1)).createGhost();
     }
 
     /**
-     * Test that parsing zero lines fails.
+     * Test for parsing an inputstream with a map with normal behaviour.
      *
-     * [Bad Weather]
+     * @throws IOException the io exception
      */
     @Test
-    void invalidEmptyList() {
-        assertThatThrownBy(() -> mapParser.parseMap(emptyList()))
-            .isInstanceOf(PacmanConfigurationException.class);
+    @SuppressWarnings("checkstyle:magicnumber"
+        // the test contains non generic numbers specific to this test
+    )
+    void inputStreamParseMapTest() throws IOException {
+        try (InputStream source = new FileInputStream("./src/test/resources/testmap.txt")) {
+            mapParser.parseMap(source);
+            Mockito.verify(boardFactory, times(4)).createGround();
+            Mockito.verify(levelFactory, times(1)).createPellet();
+            Mockito.verify(boardFactory, times(12)).createWall();
+            Mockito.verify(levelFactory, times(1)).createGhost();
+        }
     }
 
     /**
-     * Test that parsing an empty line fails.
-     *
-     * [Bad Weather]
+     * Test for PacmanConfigurationException when an invalid character
+     * is given.
      */
     @Test
-    void invalidEmptyLine() {
-        assertThatThrownBy(() -> mapParser.parseMap(singletonList("")))
-            .isInstanceOf(PacmanConfigurationException.class);
+    void invalidCharacterTest() {
+        levelMap.add("C");
+        assertThrows(PacmanConfigurationException.class, () -> mapParser.parseMap(levelMap));
     }
 
     /**
-     * Test that lines cannot have different lengths.
-     *
-     * [Bad Weather]
+     * Test for PacmanConfigurationException when trying to parse non-existent file.
      */
     @Test
-    void invalidLineLengths() {
-        assertThatThrownBy(() -> mapParser.parseMap(asList("##", "#")))
-            .isInstanceOf(PacmanConfigurationException.class);
+    void textFileExceptionTest() {
+        String map = "No-file.txt";
+        PacmanConfigurationException thrown =  assertThrows(PacmanConfigurationException.class,
+            () -> mapParser.parseMap(map));
+        assertThat(thrown.getMessage()).contains("Could not get resource for: " + map);
     }
 
     /**
-     * Test that lines cannot contain invalid characters.
-     *
-     * [Bad Weather]
+     * Test for PacmanConfigurationException when map is null.
      */
     @Test
-    void invalidCharacter() {
-        assertThatThrownBy(() -> mapParser.parseMap(singletonList("!")))
-            .isInstanceOf(PacmanConfigurationException.class);
+    void mapIsNullTest() {
+        levelMap = null;
+        PacmanConfigurationException thrown = assertThrows(PacmanConfigurationException.class,
+            () -> mapParser.parseMap(levelMap));
+        assertThat(thrown.getMessage()).contains("Input text cannot be null.");
     }
 
     /**
-     * Test that a non existing file cannot be parsed.
-     *
-     * [Bad Weather]
+     * Test for PacmanConfigurationException when map is empty.
      */
     @Test
-    void nonExistingFile() {
-        assertThatThrownBy(() -> mapParser.parseMap("/does-not-exist.txt"))
-            .isInstanceOf(PacmanConfigurationException.class);
+    void mapIsEmptyTest() {
+        PacmanConfigurationException thrown = assertThrows(PacmanConfigurationException.class,
+            () -> mapParser.parseMap(levelMap));
+        assertThat(thrown.getMessage()).contains("Input text must consist of at least 1 row.");
     }
 
     /**
-     * Verifies that a level is created.
+     * Test for PacmanConfigurationException when the line is empty.
      */
-    void verifyLevelCreated() {
-        verify(levelFactory).createLevel(any(), anyList(), anyList());
+    @Test
+    void lineIsEmptyTest() {
+        levelMap.add("");
+        PacmanConfigurationException thrown = assertThrows(PacmanConfigurationException.class,
+            () -> mapParser.parseMap(levelMap));
+        assertThat(thrown.getMessage()).contains("Input text lines cannot be empty.");
     }
+
+    /**
+     * Test for PacmanConfigurationException when the widths of two lines are not equal.
+     */
+    @Test
+    void widthNotEqualTest() {
+        levelMap.add("##");
+        levelMap.add("#");
+        PacmanConfigurationException thrown = assertThrows(PacmanConfigurationException.class,
+            () -> mapParser.parseMap(levelMap));
+        assertThat(thrown.getMessage()).contains("Input text lines are not of equal width.");
+    }
+
 }

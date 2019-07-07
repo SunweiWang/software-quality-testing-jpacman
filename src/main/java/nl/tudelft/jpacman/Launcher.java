@@ -55,15 +55,6 @@ public class Launcher {
     }
 
     /**
-     * Set the map file.
-     * @param levelMap
-     *            The name of the map file.
-     */
-    protected void setLevelMap(String levelMap) {
-        this.levelMap = levelMap;
-    }
-
-    /**
      * Set the name of the file containing this level's map.
      *
      * @param fileName
