@@ -7,12 +7,12 @@ import nl.tudelft.jpacman.sprite.Sprite;
  *
  * @author Jeroen Roosen 
  */
-class BasicSquare extends Square {
+public class BasicSquare extends Square {
 
     /**
      * Creates a new basic square.
      */
-    BasicSquare() {
+    public BasicSquare() {
         super();
     }
 

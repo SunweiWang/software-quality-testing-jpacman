@@ -6,158 +6,159 @@ import nl.tudelft.jpacman.level.Level;
 import nl.tudelft.jpacman.level.LevelFactory;
 import nl.tudelft.jpacman.level.Player;
 import nl.tudelft.jpacman.level.PlayerFactory;
-import nl.tudelft.jpacman.npc.Ghost;
-import nl.tudelft.jpacman.points.PointCalculator;
+import nl.tudelft.jpacman.points.DefaultPointCalculator;
 import nl.tudelft.jpacman.sprite.PacManSprites;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 /**
- * Testing the possible moves of Inky.
+ * Test for the Inky ghost ai moves.
  */
 class InkyTest {
 
-    private GhostMapParser ghostMapParser;
 
-    private PlayerFactory playerFactory;
-
-    private PacManSprites spriteStore;
-
-    private GhostFactory ghostFactory;
-
-    private BoardFactory boardFactory;
-
-    private LevelFactory levelFactory;
+    private GhostMapParser parser;
+    private Player p;
 
     /**
-     * Setting up the GhostMapParser.
+     * Set up before each test.
+     * Generates the GhostMapParser and initialises the player
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @BeforeEach
-    void setUp() {
-        spriteStore = new PacManSprites();
-        ghostFactory = new GhostFactory(spriteStore);
-        boardFactory = new BoardFactory(spriteStore);
-        levelFactory = new LevelFactory(spriteStore,
-            ghostFactory,
-            mock(PointCalculator.class));
-        playerFactory = new PlayerFactory(spriteStore);
-        ghostMapParser = new GhostMapParser(levelFactory, boardFactory, ghostFactory);
+    void setUp() throws IOException {
+
+        PacManSprites spriteStore = new PacManSprites();
+
+        parser = new GhostMapParser(
+            new LevelFactory(spriteStore, new GhostFactory(spriteStore),
+                new DefaultPointCalculator()),
+            new BoardFactory(spriteStore),
+            new GhostFactory(spriteStore)
+        );
+
+        p = (new PlayerFactory(spriteStore)).createPacMan();
+        p.setDirection(Direction.WEST);
+
+
     }
 
     /**
-     * Testing the method nextAiMove() for when Inky does not occupy a square on the board.
+     * Check if Inky goes towards the player if Blinky is in front of Inky.
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @Test
-    void testNoSquareAssertionError() {
-        Ghost inky = ghostFactory.createInky();
-        assertThrows(AssertionError.class, inky::nextAiMove);
+    void checkGoCloser() throws IOException {
+
+        Level l = this.createMap("#......P.B.I#");
+        l.registerPlayer(p);
+
+        Inky c = Navigation.findUnitInBoard(Inky.class, l.getBoard());
+
+        List<Direction> route = Navigation.shortestPath(p.getSquare(), c.getSquare(), c);
+        int oldDistance = route.size();
+
+        l.move(c, c.nextAiMove().get());
+        route = Navigation.shortestPath(p.getSquare(), c.getSquare(), c);
+
+        assertThat(oldDistance).isEqualTo(route.size() + 1);
     }
 
     /**
-     * Testing the method nextAiMove() for when Inky is being stuck in between walls.
-     * We expect the next move to be empty because there are no possible paths.
+     * Check if Inky goes away from the player if Blinky is too far behind.
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @Test
-    void testNoPossiblePath() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("##########");
-        levelMap.add("#P  B  #I#");
-        levelMap.add("##########");
-        Level level = ghostMapParser.parseMap(levelMap);
-        Player player = playerFactory.createPacMan();
-        level.registerPlayer(player);
-        player.setDirection(Direction.EAST);
-        assertThat(Objects.requireNonNull(
-            Navigation.findUnitInBoard(Inky.class, level.getBoard())).nextAiMove())
-            .isEqualTo(Optional.empty());
+    void checkGoAway() throws IOException {
+
+        Level l = this.createMap("#......I.P...B#");
+        l.registerPlayer(p);
+
+        Inky i = Navigation.findUnitInBoard(Inky.class, l.getBoard());
+
+        List<Direction> route = Navigation.shortestPath(p.getSquare(), i.getSquare(), i);
+        int oldDistance = route.size();
+        l.move(i, i.nextAiMove().get());
+        route = Navigation.shortestPath(p.getSquare(), i.getSquare(), i);
+
+        assertThat(oldDistance).isEqualTo(route.size() - 1);
+    }
+
+
+    /**
+     * Assert that Inky doesn't move if there is nowhere to move (path is null).
+     *
+     * @throws IOException Throws IOException when parser failed.
+     */
+    @Test
+    void checkPath() throws IOException {
+
+
+        Level l = this.createMap("####I#B#P####");
+        l.registerPlayer(p);
+
+        Inky i = Navigation.findUnitInBoard(Inky.class, l.getBoard());
+
+        Optional<Direction> direction = i.nextAiMove();
+
+        assertThat(direction.isPresent()).isFalse();
     }
 
     /**
-     * Testing the behaviour of the method nextAiMove() for when there is no blinky on the board.
-     * There should be no next move.
+     * Asserts that Inky doesn't move when there is no player.
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @Test
-    void testNoBlinky() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("##########");
-        levelMap.add("#P     #I#");
-        levelMap.add("##########");
-        Level level = ghostMapParser.parseMap(levelMap);
-        Player player = playerFactory.createPacMan();
-        level.registerPlayer(player);
-        player.setDirection(Direction.EAST);
-        ghostFactory.createBlinky();
-        assertThat(Objects.requireNonNull(
-            Navigation.findUnitInBoard(Inky.class, level.getBoard())).nextAiMove())
-            .isEqualTo(Optional.empty());
+    void checkNoPlayer() throws IOException {
+
+        Level l = this.createMap("#..B.I..#");
+        Inky i = Navigation.findUnitInBoard(Inky.class, l.getBoard());
+        Optional<Direction> direction = i.nextAiMove();
+
+        assertThat(direction.isPresent()).isFalse();
     }
 
     /**
-     * Testing the behaviour of the method nextAiMove() for when there is no player on the board.
-     * There should be no next move.
+     * Asserts that Inky doesn't move when there is no Blinky.
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @Test
-    void testNoPlayer() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("##########");
-        levelMap.add("#B     #I#");
-        levelMap.add("##########");
-        Level level = ghostMapParser.parseMap(levelMap);
-        playerFactory.createPacMan();
-        assertThat(Objects.requireNonNull(
-            Navigation.findUnitInBoard(Inky.class, level.getBoard())).nextAiMove())
-            .isEqualTo(Optional.empty());
+    void checkNoBlinky() throws IOException {
+
+        Level l = this.createMap("#...P...I...#");
+        Inky i = Navigation.findUnitInBoard(Inky.class, l.getBoard());
+        Optional<Direction> direction = i.nextAiMove();
+
+        assertThat(direction.isPresent()).isFalse();
+
     }
 
     /**
-     * Testing one of normal behaviours of the method nextAiMove(). The player is facing EAST
-     * thus the shortest path possible from Blinky to two squares in front of the player
-     * is in a straight line facing EAST. Inky is expected have the pathing towards the end of
-     * the corridor, going through both Blinky and the player because he needs to move double
-     * the distance of the shortest path.
+     * Generates a Level out of the given map.
+     *
+     * @param mapLayout -> The layout of the map as a string
+     * @return the instantiated Level
      */
-    @Test
-    void testNormalBehaviour() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("###################");
-        levelMap.add("#  I   B  P       #");
-        levelMap.add("###################");
-        Level level = ghostMapParser.parseMap(levelMap);
-        Player player = playerFactory.createPacMan();
-        level.registerPlayer(player);
-        player.setDirection(Direction.EAST);
-        assertThat(Objects.requireNonNull(
-            Navigation.findUnitInBoard(Inky.class, level.getBoard())).nextAiMove())
-            .hasValue(Direction.EAST);
-    }
+    Level createMap(String mapLayout) {
 
-    /**
-     * Testing the second normal behaviour of the method nextAiMove(). The player is facing EAST
-     * thus the shortest path possible in a single straight line from Blinky to two squares in front
-     * of the player will make Inky will run away from the player to the square resulting in double
-     * the distance of the shortest path.
-     */
-    @Test
-    void testInkyInFrontBlinkyBehindPacMan() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("#################");
-        levelMap.add("#BPI            #");
-        levelMap.add("#################");
-        Level level = ghostMapParser.parseMap(levelMap);
-        Player player = playerFactory.createPacMan();
-        level.registerPlayer(player);
-        player.setDirection(Direction.EAST);
-        assertThat(Objects.requireNonNull(
-            Navigation.findUnitInBoard(Inky.class, level.getBoard())).nextAiMove())
-            .hasValue(Direction.EAST);
+        List<String> map = new ArrayList<String>();
+        map.add(mapLayout);
+        Level l = parser.parseMap(map);
+        l.start();
+
+        return l;
     }
 
 }

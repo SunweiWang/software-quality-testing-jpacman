@@ -5,65 +5,76 @@ import nl.tudelft.jpacman.level.Level;
 import nl.tudelft.jpacman.level.Player;
 import nl.tudelft.jpacman.points.PointCalculator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The type Multi level game.
+ * Game With multiple levels.
  */
 public class MultiLevelGame extends Game {
 
-    private Player player;
 
-    private Level currentLevel;
+    private List<Level> levels;
 
-    private List<Level> levelList;
+    private int currentLevel = 0;
 
-    private int counter = 0;
+    private final Player player;
 
 
     /**
-     * Creating a new single player game like implementation.
+     * Creates a new game.
      *
-     * @param player          the player
-     * @param levels          the level
+     * @param player          - The player.
+     * @param levels          -> The list of levels
      * @param pointCalculator The way to calculate points upon collisions.
      */
     public MultiLevelGame(Player player, List<Level> levels, PointCalculator pointCalculator) {
+
+
         super(pointCalculator);
-
-        assert player != null;
-        assert levels != null;
-
         this.player = player;
-        this.levelList = levels;
-        this.currentLevel = levelList.get(0);
-        this.currentLevel.registerPlayer(player);
+
+        this.levels = new ArrayList<>(levels);
+
+        this.levels.get(0).registerPlayer(player);
+
     }
 
-    /**
-     * Method which sets the next level and registers the player for the next level.
-     */
-    public void nextLevel() {
-        this.currentLevel = levelList.get(counter);
-        currentLevel.registerPlayer(player);
-    }
 
     @Override
     public List<Player> getPlayers() {
+
         return ImmutableList.of(player);
     }
 
     @Override
     public Level getLevel() {
-        return currentLevel;
+
+        return this.levels.get(currentLevel);
     }
 
     @Override
     public void levelWon() {
+
         stop();
-        if (counter < levelList.size() - 1) {
-            counter++;
-            nextLevel();
+
+        if (this.currentLevel < this.levels.size() - 1) {
+
+            this.currentLevel += 1;
+
+            this.levels.get(this.currentLevel).registerPlayer(player);
+            start();
+
         }
+
+    }
+
+    /**
+     * Shows the current played level.
+     * @return int
+     */
+    public int getPlayerLevel() {
+
+        return this.currentLevel + 1;
     }
 }

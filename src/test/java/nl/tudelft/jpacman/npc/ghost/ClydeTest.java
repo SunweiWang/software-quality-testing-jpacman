@@ -1,141 +1,147 @@
 package nl.tudelft.jpacman.npc.ghost;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-
 import nl.tudelft.jpacman.board.BoardFactory;
 import nl.tudelft.jpacman.board.Direction;
 import nl.tudelft.jpacman.level.Level;
 import nl.tudelft.jpacman.level.LevelFactory;
 import nl.tudelft.jpacman.level.Player;
 import nl.tudelft.jpacman.level.PlayerFactory;
-import nl.tudelft.jpacman.npc.Ghost;
-import nl.tudelft.jpacman.points.PointCalculator;
+import nl.tudelft.jpacman.points.DefaultPointCalculator;
 import nl.tudelft.jpacman.sprite.PacManSprites;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The test case for testing the behaviour of Clyde using the nextAiMove()
- * in the different possible cases.
+ * Test for the ghost clyde.
  */
 public class ClydeTest {
 
-    private GhostMapParser ghostMapParser;
 
-    private PlayerFactory playerFactory;
-
-    private PacManSprites spriteStore;
-
-    private GhostFactory ghostFactory;
-
-    private BoardFactory boardFactory;
-
-    private LevelFactory levelFactory;
+    private GhostMapParser parser;
+    private Player p;
 
     /**
-     * Setting up the GhostMapParser.
+     * Set up before each test.
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @BeforeEach
-    void setUp() {
-        spriteStore = new PacManSprites();
-        ghostFactory = new GhostFactory(spriteStore);
-        boardFactory = new BoardFactory(spriteStore);
-        levelFactory = new LevelFactory(spriteStore,
-            ghostFactory,
-            mock(PointCalculator.class));
-        playerFactory = new PlayerFactory(spriteStore);
-        ghostMapParser = new GhostMapParser(levelFactory, boardFactory, ghostFactory);
+    void setUp() throws IOException {
+
+        PacManSprites spriteStore = new PacManSprites();
+
+        parser = new GhostMapParser(
+            new LevelFactory(spriteStore, new GhostFactory(spriteStore),
+                new DefaultPointCalculator()),
+            new BoardFactory(spriteStore),
+            new GhostFactory(spriteStore)
+        );
+
+        p = (new PlayerFactory(spriteStore)).createPacMan();
+        p.setDirection(Direction.WEST);
+
+
     }
 
     /**
-     * Testing the method nextAiMove() for when Inky does not occupy a square on the board.
+     * Check if Clayde goes closer if it's at least 8 blocks away from the player.
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @Test
-    void testNoSquareAssertionError() {
-        Ghost clyde = ghostFactory.createClyde();
-        assertThrows(AssertionError.class, clyde::nextAiMove);
+    void checkGoCloser() throws IOException {
+
+        Level l = this.createMap("#...P..........C...#");
+        l.registerPlayer(p);
+
+        Clyde c = Navigation.findUnitInBoard(Clyde.class, l.getBoard());
+
+        List<Direction> route = Navigation.shortestPath(p.getSquare(), c.getSquare(), c);
+        int oldDistance = route.size();
+
+        l.move(c, c.nextAiMove().get());
+
+        route = Navigation.shortestPath(p.getSquare(), c.getSquare(), c);
+        assertThat(oldDistance).isEqualTo(route.size() + 1);
     }
 
     /**
-     * Testing the direction of the next move of Clyde when he is within eight blocks of the player.
-     * The direction we expect from the method nextAiMove() is EAST, away from the player.
+     * Check if Clayde goes away from the player if it is within 8 blocks of clyde.
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @Test
-    void testWithinEightBlocks() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("#######");
-        levelMap.add("#P   C#");
-        levelMap.add("#######");
-        Level level = ghostMapParser.parseMap(levelMap);
-        Player player = playerFactory.createPacMan();
-        level.registerPlayer(player);
-        player.setDirection(Direction.EAST);
-        assertThat(Objects.requireNonNull(Navigation.findUnitInBoard(Clyde.class, level.getBoard()))
-            .nextAiMove())
-            .hasValue(Direction.EAST);
+    void checkGoAway() throws IOException {
+
+        Level l = this.createMap("#...P...C...#");
+        l.registerPlayer(p);
+
+        Clyde c = Navigation.findUnitInBoard(Clyde.class, l.getBoard());
+
+        List<Direction> route = Navigation.shortestPath(p.getSquare(), c.getSquare(), c);
+        int oldDistance = route.size();
+
+        l.move(c, c.nextAiMove().get());
+
+        route = Navigation.shortestPath(p.getSquare(), c.getSquare(), c);
+        assertThat(oldDistance).isEqualTo(route.size() - 1);
+    }
+
+
+    /**
+     * Assert that Clyde doesn't move if there is nowhere to move (path is null).
+     *
+     * @throws IOException Throws IOException when parser failed.
+     */
+    @Test
+    void checkPath() throws IOException {
+
+        Level l = this.createMap("#C#P#");
+        l.registerPlayer(p);
+
+        Clyde c = Navigation.findUnitInBoard(Clyde.class, l.getBoard());
+
+        Optional<Direction> direction = c.nextAiMove();
+        assertThat(direction.isPresent()).isFalse();
     }
 
     /**
-     * Testing the direction of the next move of Clyde when he is further
-     * than eight blocks of the player.
-     * The direction we expect from the method nextAiMove() is WEST, towards the player.
+     * Asserts that Clyde doesn't move when there is no player.
+     *
+     * @throws IOException Throws IOException when parser failed.
      */
     @Test
-    void testFurtherThanEightBlocks() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("#############");
-        levelMap.add("#P         C#");
-        levelMap.add("#############");
-        Level level = ghostMapParser.parseMap(levelMap);
-        Player player = playerFactory.createPacMan();
-        level.registerPlayer(player);
-        player.setDirection(Direction.EAST);
-        assertThat(Objects.requireNonNull(Navigation.findUnitInBoard(Clyde.class, level.getBoard()))
-            .nextAiMove())
-            .hasValue(Direction.WEST);
+    void checkNoPlayer() throws IOException {
+
+        Level l = this.createMap("#...C..#");
+        Clyde c = Navigation.findUnitInBoard(Clyde.class, l.getBoard());
+        Optional<Direction> direction = c.nextAiMove();
+        assertThat(direction.isPresent()).isFalse();
+
     }
 
     /**
-     * Testing the method nextAiMove() for when Clyde does not have a player to move to/from.
+     * Generates a Level out of the given map.
+     *
+     * @param mapLayout -> The layout of the map as a string
+     * @return the instantiated Level
      */
-    @Test
-    void testNoPlayer() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("####");
-        levelMap.add("# C#");
-        levelMap.add("####");
-        Level level = ghostMapParser.parseMap(levelMap);
-        Player player = playerFactory.createPacMan();
-        player.setDirection(Direction.EAST);
-        assertThat(Objects.requireNonNull(Navigation.findUnitInBoard(Clyde.class, level.getBoard()))
-            .nextAiMove())
-            .isEmpty();
+    Level createMap(String mapLayout) {
+
+        List<String> map = new ArrayList<String>();
+        map.add(mapLayout);
+        Level l = parser.parseMap(map);
+        l.start();
+
+        return l;
     }
 
-    /**
-     * Testing the method nextAiMove() for when Clyde is being stuck in between walls.
-     * We expect the next move to be empty because there are no possible paths.
-     */
-    @Test
-    void testNoPossiblePath() {
-        ArrayList<String> levelMap = new ArrayList<>();
-        levelMap.add("#######");
-        levelMap.add("#P  #C#");
-        levelMap.add("#######");
-        Level level = ghostMapParser.parseMap(levelMap);
-        Player player = playerFactory.createPacMan();
-        level.registerPlayer(player);
-        player.setDirection(Direction.EAST);
-        assertThat(Objects.requireNonNull(
-            Navigation.findUnitInBoard(Clyde.class, level.getBoard())).nextAiMove())
-            .isEqualTo(Optional.empty());
-    }
 
 }

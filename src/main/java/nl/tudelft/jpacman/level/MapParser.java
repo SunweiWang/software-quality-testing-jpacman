@@ -227,6 +227,7 @@ public class MapParser {
             }
             return parseMap(lines);
         }
+
     }
 
     /**
@@ -243,7 +244,7 @@ public class MapParser {
         value = {"OBL_UNSATISFIED_OBLIGATION", "RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"},
         justification = "try with resources always cleans up / false positive in java 11"
     )
-    public Level parseMap(String mapName) throws IOException {
+    public Level    parseMap(String mapName) throws IOException {
         try (InputStream boardStream = MapParser.class.getResourceAsStream(mapName)) {
             if (boardStream == null) {
                 throw new PacmanConfigurationException("Could not get resource for: " + mapName);

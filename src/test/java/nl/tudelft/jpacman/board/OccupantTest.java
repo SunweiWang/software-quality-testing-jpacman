@@ -1,16 +1,15 @@
 package nl.tudelft.jpacman.board;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Test suite to confirm that {@link Unit}s correctly (de)occupy squares.
  *
- * @author Jeroen Roosen 
- *
+ * @author Jeroen Roosen
  */
 class OccupantTest {
 
@@ -20,17 +19,11 @@ class OccupantTest {
     private Unit unit;
 
     /**
-     * The square under test.
-     */
-    private Square square;
-
-    /**
      * Resets the unit under test.
      */
     @BeforeEach
     void setUp() {
         unit = new BasicUnit();
-        square = new BasicSquare();
     }
 
     /**
@@ -38,7 +31,8 @@ class OccupantTest {
      */
     @Test
     void noStartSquare() {
-        assertFalse(unit.hasSquare());
+        // Remove the following placeholder:
+        assertThat(unit.hasSquare()).isFalse();
     }
 
     /**
@@ -47,8 +41,13 @@ class OccupantTest {
      */
     @Test
     void testOccupy() {
-        unit.occupy(square);
-        assertEquals(unit.getSquare(), square);
+        Square sq = new BasicSquare();
+        unit.occupy(sq);
+        // Remove the following placeholder:
+        assertEquals(sq, unit.getSquare());
+        assertEquals(1, sq.getOccupants().size());
+        assertEquals(unit, sq.getOccupants().get(0));
+
     }
 
     /**
@@ -57,8 +56,14 @@ class OccupantTest {
      */
     @Test
     void testReoccupy() {
-        unit.occupy(square);
-        unit.occupy(square);
-        assertEquals(square, unit.getSquare());
+        Square sq = new BasicSquare();
+        Square sq2 = new BasicSquare();
+        unit.occupy(sq);
+        unit.occupy(sq2);
+        // Remove the following placeholder:
+        assertEquals(sq2, unit.getSquare());
+        assertEquals(0, sq.getOccupants().size());
+        assertEquals(1, sq2.getOccupants().size());
+        assertEquals(unit, sq2.getOccupants().get(0));
     }
 }
